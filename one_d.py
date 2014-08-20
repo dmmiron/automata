@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 
+import time
+
 class State:
     def __init__(self, rule=0, values=[0]):
         self.set_rule(rule)
@@ -26,7 +28,7 @@ class State:
     def __str__(self):
         return str(self.values)
     def display(self, pad=0):
-        plt.imshow([[0]*pad+self.values+[0]*pad], cmap=plt.cm.gray_r, interpolation='none')
+        #plt.imshow([[0]*pad+self.values+[0]*pad], cmap=plt.cm.gray_r, interpolation='none')
         plt.show()
     def next_state(self):
         temp = [0]*2 + self.values + [0]*2
@@ -49,7 +51,9 @@ class Machine:
         self.states.append(self.base_state)
         for i in range(self.layers-1):
             self._add_layer()
-        self.im = self._gen_image() 
+        self.fig = None
+        self.im = None
+        self.state_idx = 0
     def _add_layer(self):
         self.states.append(self.states[-1].next_state())
     def add_layer(self, n=1):
@@ -61,25 +65,37 @@ class Machine:
         for idx, state in enumerate(self.states):
             pad = self.layers - idx
             image.append(state.get_values(pad))
+        self.array = np.zeros(np.array(image).shape)
         return plt.imshow(image, cmap=plt.cm.gray_r, interpolation='none')
     def display(self):
         self._gen_image()
         plt.show()
-    def updatefig():
-        array = self.im
-        self.im.set_array(
 
-    def get_state(self, i):
-        pad = self.layers - i
-        return plt.imshow([self.states[i].get_values(pad)], cmap=plt.cm.gray_r, interpolation='none')
+    def update_fig(self, *args):
+        if self.state_idx == 0:
+            self.array = np.zeros(self.array.shape)
+        pad = self.layers - self.state_idx
+        self.array[self.state_idx, :] = self.states[self.state_idx].get_values(pad)
+        self.im.set_array(self.array)
+        self.state_idx = (self.state_idx + 1) % self.layers
+        return self.im,
+
     def animate(self):
-        fig = plt.figure()
-        animation = anim.FuncAnimation(fig, self.get_state, frames=200, interval=20, blit=True)
+        #if isinstance(self.fig, None):
+        #if self.fig is None:
+        self.fig = plt.figure()
+        #if isinstance(self.im, None):
+        #if self.im is None:
+        self.im = self._gen_image() 
+        animation = anim.FuncAnimation(self.fig, self.update_fig, interval=50, frames=200, blit=True)
         plt.show()
 
 
 def test():
     machine = Machine(rule=30, values=[1])
-    machine = machine.add_layer(10)
+    machine = machine.add_layer(20)
     machine.animate()
     return machine
+
+if __name__ == "__main__":
+    test()
