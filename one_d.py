@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
+import matplotlib.colors as clr
 
 import time
 
@@ -8,6 +9,7 @@ class State:
     def __init__(self, rule=0, values=[0]):
         self.set_rule(rule)
         self.values = values
+        self.norm = None
     def set_rule(self, rule):
         if isinstance(rule, int):
             self.rule = self._rule_from_int(rule)
@@ -28,6 +30,7 @@ class State:
     def __str__(self):
         return str(self.values)
     def display(self, pad=0):
+        plt.imshow([self.values], cmap=plt.cm.gray_r, interpolation='none') 
         plt.show()
     def next_state(self):
         temp = [0]*2 + self.values + [0]*2
@@ -46,6 +49,7 @@ class Totalistic_State(State):
         self.nvalues = 3*k-2
         self.set_rule(rule)
         self.values = values
+        self.norm = clr.Normalize(vmax=k-1)
     def _rule_from_int(self, value):
         rule = dict()
         for i in range(self.nvalues):
@@ -74,6 +78,7 @@ class Machine:
             self.base_state = State(self.rule, self.values)
         elif self.type=='totalistic':
             self.base_state = Totalistic_State(self.rule, self.values, self.k)
+        self.norm = self.base_state.norm
         self.states.append(self.base_state)
         for i in range(self.layers-1):
             self._add_layer()
@@ -94,9 +99,9 @@ class Machine:
             image.append(state.get_values(pad))
         self.array = np.zeros(np.array(image).shape)
         if self.anim_dim == 1:
-            return plt.imshow(image[0:1], cmap=plt.cm.gray_r, interpolation='none')
+            return plt.imshow(image[0:1], norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
         else:
-            return plt.imshow(image, cmap=plt.cm.gray_r, interpolation='none')
+            return plt.imshow(image, norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
     def display(self):
         self._gen_image()
         plt.show()
@@ -120,24 +125,38 @@ class Machine:
         self.state_idx = (self.state_idx + 1) % self.layers
         return self.im,
 
-    def animate(self, dim=2, interval=50):
+    def animate(self, dim=2, interval=50, display=True, repeat=True):
         #recommend longer interval for dim=1
         self.anim_dim = dim
         self.fig = plt.figure()
         self.im = self._gen_image() 
-        self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True)
-        plt.show()
-    def save_animation(self):
-        #self.ani.save('automata_rule:{0}_layers{1}.mp4'.format(self.rule, self.layers), fps=30)
-        self.ani.save("automata.mp4", fps=30)
+        self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, repeat=repeat)
+        if display:
+            plt.show()
+    def save_animation(self, path):
+        self.ani.save(path+'automata_rule:{0:03d}_layers{1:03d}.mp4'.format(self.rule, self.layers), fps=30)
+        
+        #self.ani.save("automata.mp4", fps=30)
+    def del_animation(self):
+        plt.close(self.fig)
+        del self.ani
 
 
-def test():
-    machine = Machine(rule=30, values=[1])
-    machine = machine.add_layer(16)
-    machine.animate()
-    machine.save_animation()
+def test_binary():
+    for i in range(256):
+        machine = Machine(rule=i, values=[1])
+        machine = machine.add_layer(20)
+        machine.animate(display=False)
+        machine.save_animation(path="animations/")
+        machine.del_animation()
     return machine
 
+def test_trinary():
+    for i in range(3**6):
+        machine = Machine(rule=i, values=[1], type='totalistic')
+        machine = machine.add_layer(50)
+        machine.animate(display=True, repeat=False)
+        machine.del_animation() 
+
 if __name__ == "__main__":
-    test()
+    test_binary()
