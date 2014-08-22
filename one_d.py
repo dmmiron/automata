@@ -68,30 +68,30 @@ class Totalistic_State(State):
         return sum(pattern)
 
 class Machine:
-    def __init__(self, rule=0, values=[0], type='binary', k=3, layers=1):
+    def __init__(self, rule=0, values=[0], state_type='binary', k=3, layers=1):
         self.states = []
         self.rule = rule 
         self.values = values
         self.layers = layers
-        self.type=type
+        self.state_type=state_type
         self.k = k
-        if self.type=='binary':
+        if self.state_type=='binary':
             self.base_state = State(self.rule, self.values)
-        elif self.type=='totalistic':
+        elif self.state_type=='totalistic':
             self.base_state = Totalistic_State(self.rule, self.values, self.k)
         self.norm = self.base_state.norm
         self.states.append(self.base_state)
         for i in range(self.layers-1):
             self._add_layer()
         self.fig = None
+        self.subplot = None
         self.im = None
         self.state_idx = 0
         self.anim_dim = 2
-        self.subplot = None
     def _add_layer(self):
         self.states.append(self.states[-1].next_state())
     def add_layer(self, n=1):
-        return Machine(self.rule, self.values, self.type, self.k, self.layers+n)
+        return Machine(self.rule, self.values, self.state_type, self.k, self.layers+n)
     def __str__(self):
         return str(map(str, self.states))
     def _gen_image(self):
@@ -101,14 +101,13 @@ class Machine:
             image.append(state.get_values(pad))
         self.array = np.zeros(np.array(image).shape)
         if self.anim_dim == 1:
-            return plt.imshow(image[0:1], norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
-        elif self.subplot != None:
-            return self.subplot.imshow(image, norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
+            return self.subplot.imshow(image[0:1], norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
         else:
-            return plt.imshow(image, norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
+            return self.subplot.imshow(image, norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
     def display(self):
         self._gen_image()
         plt.show()
+
     def init_anim(self):
         self.im = self._gen_image()
         self.array = np.zeros(self.array.shape)
@@ -130,7 +129,7 @@ class Machine:
         self.state_idx = (self.state_idx + 1) % self.layers
         return self.im,
 
-    def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=None):
+    def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=(1, 1, 1)):
         #recommend longer interval for dim=1
         self.anim_dim = dim
         if figure == None:
@@ -138,9 +137,10 @@ class Machine:
         else:
             self.fig = figure
         #self.im = self._gen_image()
-        if subplot != None:
-            self.subplot = self.fig.add_subplot(*subplot)
+        self.subplot = self.fig.add_subplot(*subplot)
+
         self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, frames=self.layers, repeat=repeat, repeat_delay=repeat_delay)
+
         if display:
             plt.show()
 
@@ -155,51 +155,26 @@ def test_binary():
     for i in range(256):
         machine = Machine(rule=i, values=[1])
         machine = machine.add_layer(20)
-        machine.animate(display=False)
-        machine.save_animation(path="animations/")
+        machine.animate(dim=1, display=True)
+        #machine.save_animation(path="animations/")
         machine.del_animation()
     return machine
 
 def test_trinary():
-    global figure
     figure = plt.figure()
-    nfigs = 5 
+    nfigs = 16 
     nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
-    global machines
     machines = []
     for i in range(nfigs):
         subplot = (nrows, ncols, i+1)
-        #figure.add_subplot(*subplot)
-        print subplot
-        machine = Machine(rule=i, values=[1], type='totalistic')
-        machine = machine.add_layer(50)
+        machine = Machine(rule=i, values=[1], state_type='totalistic')
+        machine = machine.add_layer(20)
         machines.append(machine)
         machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
         #machine.del_animation() 
         print "rule {0}".format(i)
     plt.show()
-    sys.exit()
-    init_figures()
-    ani = anim.FuncAnimation(figure, update_figures, interval=50, blit=True, frames=51, repeat=True, repeat_delay=1000)
-    plt.show()
-
-def gen_images():
-    map(lambda x: x._gen_image(), machines)
-
-def init_figures(*args):
-    global machines
-    ims = map(lambda x: x.init_anim(), machines)
-    return 
-
-def update_figures(*args):
-    global machines
-    global figure
-    images = []
-    for idx, machine in enumerate(machines):
-        figure.subplot(2, 2, idx+1) 
-        images.append(machine.update_fig()[0])
-    #images = map(lambda x: x.update_fig()[0], machines)
-    return images
 
 if __name__ == "__main__":
+    #test_binary()
     test_trinary()
