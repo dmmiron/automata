@@ -113,7 +113,8 @@ class Machine:
             self.im.set_array(self.array)
         return self.im,
 
-    def update_fig(self, *args):
+    def update_fig(self, subplot=None, *args):
+        self.im = self._gen_image()
         if self.state_idx == 0:
             self.array = np.zeros(self.array.shape)
         pad = self.layers - self.state_idx
@@ -134,18 +135,16 @@ class Machine:
             self.fig = figure
         if subplot != None:
             self.fig.add_subplot(*subplot)
-        self.im = self._gen_image() 
         self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, frames=self.layers, repeat=repeat, repeat_delay=repeat_delay)
         if display:
             plt.show()
+
     def save_animation(self, path):
         self.ani.save(path+'automata_rule:{0:03d}_layers{1:03d}.mp4'.format(self.rule, self.layers), fps=30)
         
-        #self.ani.save("automata.mp4", fps=30)
     def del_animation(self):
         plt.close(self.fig)
         del self.ani
-
 
 def test_binary():
     for i in range(256):
@@ -158,18 +157,26 @@ def test_binary():
 
 def test_trinary():
     figure = plt.figure()
-    nfigs = 10
+    nfigs = 2 
     nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
+    global machines
+    machines = []
     for i in range(nfigs):
         subplot = (nrows, ncols, i+1)
+        figure.add_subplot(*subplot)
         print subplot
         machine = Machine(rule=i, values=[1], type='totalistic')
         machine = machine.add_layer(50)
-        machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
+        machines.append(machine)
+        #machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
         #machine.del_animation() 
         print "rule {0}".format(i)
+    ani = anim.FuncAnimation(figure, update_figures, interval=50, blit=True, frames=50, repeat=False, repeat_delay=1000)
     plt.show()
+
+def update_figures(*args):
+    global machines
+    return map(lambda x: x.update_fig, machines)
 
 if __name__ == "__main__":
     test_trinary()
-    time.sleep(2)
