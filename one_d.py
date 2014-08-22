@@ -125,12 +125,17 @@ class Machine:
         self.state_idx = (self.state_idx + 1) % self.layers
         return self.im,
 
-    def animate(self, dim=2, interval=50, display=True, repeat=True):
+    def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=None):
         #recommend longer interval for dim=1
         self.anim_dim = dim
-        self.fig = plt.figure()
+        if figure == None:
+            self.fig = plt.figure()
+        else:
+            self.fig = figure
+        if subplot != None:
+            self.fig.add_subplot(*subplot)
         self.im = self._gen_image() 
-        self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, repeat=repeat)
+        self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, frames=self.layers, repeat=repeat, repeat_delay=repeat_delay)
         if display:
             plt.show()
     def save_animation(self, path):
@@ -152,11 +157,19 @@ def test_binary():
     return machine
 
 def test_trinary():
-    for i in range(3**6):
+    figure = plt.figure()
+    nfigs = 10
+    nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
+    for i in range(nfigs):
+        subplot = (nrows, ncols, i+1)
+        print subplot
         machine = Machine(rule=i, values=[1], type='totalistic')
         machine = machine.add_layer(50)
-        machine.animate(display=True, repeat=False)
-        machine.del_animation() 
+        machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
+        #machine.del_animation() 
+        print "rule {0}".format(i)
+    plt.show()
 
 if __name__ == "__main__":
-    test_binary()
+    test_trinary()
+    time.sleep(2)
