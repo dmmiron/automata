@@ -5,6 +5,7 @@ import matplotlib.colors as clr
 
 import time
 import sys
+import random as rand
 
 class State:
     def __init__(self, rule=0, values=[0]):
@@ -12,7 +13,7 @@ class State:
         self.values = values
         self.norm = None
     def set_rule(self, rule):
-        if isinstance(rule, int):
+        if isinstance(rule, int) or isinstance(rule, long):
             self.rule = self._rule_from_int(rule)
         elif isinstance(rule, dict):
             self.rule = rule
@@ -138,7 +139,7 @@ class Machine:
         else:
             self.fig = figure
         self.subplot = self.fig.add_subplot(*subplot)
-        self.subplot.set_title("Rule {0}, k={1}, cmap={2}".format(self.rule, self.k, self.cmap))
+        self.subplot.set_title("Rule {0}, k={1}".format(self.rule, self.k))
 
         self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, frames=self.layers, repeat=repeat, repeat_delay=repeat_delay)
 
@@ -162,22 +163,27 @@ def test_binary():
     return machine
 
 def test_trinary():
-    nfigs = 1
+    nfigs = 9 
+
     nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
     colormaps = plt.colormaps()[::2]
-    #colormaps = ['gray_r']
+    colormaps = ['rainbow_r']
     for cm in colormaps:
-        figure = plt.figure()
-        machines = []
-        for i in range(nfigs):
-            subplot = (nrows, ncols, i+1)
-            machine = Machine(rule=912, values=[1], state_type='totalistic', k=3)
-            machine = machine.add_layer(20)
-            machines.append(machine)
-            machine.animate(display=False, figure=figure, subplot=subplot, cmap=cm)
-            #machine.del_animation() 
-            print "rule {0}".format(i)
-        plt.show()
+        for k in range(3, 64):
+            exp = 3*k-2
+            rules = [long(rand.randint(0, k**exp)) for x in range(nfigs)]
+            
+            figure = plt.figure()
+            machines = []
+            for idx, rule in enumerate(rules):
+                subplot = (nrows, ncols, idx+1)
+                machine = Machine(rule=rule, values=[1], state_type='totalistic', k=k)
+                machine = machine.add_layer(20)
+                machines.append(machine)
+                machine.animate(display=False, figure=figure, subplot=subplot, cmap=cm)
+                #machine.del_animation() 
+                print "rule {0}".format(rule)
+            plt.show()
 
 if __name__ == "__main__":
     #test_binary()
