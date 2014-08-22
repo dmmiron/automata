@@ -89,24 +89,28 @@ class Machine:
         self.im = None
         self.state_idx = 0
         self.anim_dim = 2
+        self.cmap = 'gray_r'
     def _add_layer(self):
         self.states.append(self.states[-1].next_state())
     def add_layer(self, n=1):
         return Machine(self.rule, self.values, self.state_type, self.k, self.layers+n)
     def __str__(self):
         return str(map(str, self.states))
-    def _gen_image(self):
+    def _gen_image(self, static=False):
         image = []
         for idx, state in enumerate(self.states):
             pad = self.layers - idx
             image.append(state.get_values(pad))
         self.array = np.zeros(np.array(image).shape)
+        if static:
+            return plt.imshow(image, norm=self.norm, cmap=self.cmap, interpolation='none')
         if self.anim_dim == 1:
             return self.subplot.imshow(image[0:1], norm=self.norm, cmap=self.cmap, interpolation='none')
         else:
             return self.subplot.imshow(image, norm=self.norm, cmap=self.cmap, interpolation='none')
-    def display(self):
-        self._gen_image()
+    def display(self, cmap='gray_r'):
+        self.cmap=cmap
+        self._gen_image(static=True)
         plt.show()
 
     def init_anim(self):
@@ -130,7 +134,7 @@ class Machine:
         self.state_idx = (self.state_idx + 1) % self.layers
         return self.im,
 
-    def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=(1, 1, 1), cmap=plt.cm.gray_r):
+    def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=(1, 1, 1), cmap='gray_r'):
         #recommend longer interval for dim=1
         self.anim_dim = dim
         self.cmap = cmap
@@ -154,22 +158,29 @@ class Machine:
         del self.ani
 
 def test_binary():
-    for i in range(256):
+    fig = plt.figure()
+    nfigs = 16
+    ncols = int(np.sqrt(nfigs)); nrows = (nfigs + ncols - 1)/ncols 
+    machines = []
+    for i in range(nfigs):
+        subplot = (nrows, ncols, i+1)
         machine = Machine(rule=i, values=[1])
         machine = machine.add_layer(20)
-        machine.animate(dim=1, display=True)
+        machine.animate(dim=2, display=False, figure=fig, subplot=subplot)
+        machines.append(machine)
         #machine.save_animation(path="animations/")
-        machine.del_animation()
+        #machine.del_animation()
+    plt.show()
     return machine
 
 def test_trinary():
-    nfigs = 9 
+    nfigs = 2 
 
-    nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
+    ncols = int(np.sqrt(nfigs)); nrows = (nfigs + ncols - 1)/ncols 
     colormaps = plt.colormaps()[::2]
-    colormaps = ['rainbow_r']
-    for cm in colormaps:
-        for k in range(3, 64):
+    colormaps = ['hsv', 'gray_r']
+    for k in range(3, 64):
+        for cm in colormaps:
             exp = 3*k-2
             rules = [long(rand.randint(0, k**exp)) for x in range(nfigs)]
             
@@ -180,11 +191,15 @@ def test_trinary():
                 machine = Machine(rule=rule, values=[1], state_type='totalistic', k=k)
                 machine = machine.add_layer(20)
                 machines.append(machine)
-                machine.animate(display=False, figure=figure, subplot=subplot, cmap=cm)
+                machine.animate(dim=2, display=False, figure=figure, subplot=subplot, cmap=cm)
                 #machine.del_animation() 
-                print "rule {0}".format(rule)
             plt.show()
 
 if __name__ == "__main__":
+    machine = Machine(rule=912, state_type='totalistic', values=[1])
+    machine = machine.add_layer(100)
+    #machine.animate(interval=2)
+    machine.display()
+    machine.display(cmap='hsv')
     #test_binary()
-    test_trinary()
+    #test_trinary()
