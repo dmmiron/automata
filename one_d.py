@@ -117,15 +117,19 @@ class Machine:
     def update_fig(self, subplot=None, *args):
         self.im = self._gen_image()
         if self.state_idx == 0:
+            print "zeroing"
             self.array = np.zeros(self.array.shape)
         pad = self.layers - self.state_idx
+        print self.array, "before"
         self.array[self.state_idx, :] = self.states[self.state_idx].get_values(pad)
+        print self.array, "after"
         if self.anim_dim == 1:
             self.im.set_array(self.array[self.state_idx:self.state_idx+1, :])
         else:
             self.im.set_array(self.array)
         self.state_idx = (self.state_idx + 1) % self.layers
         print self.array
+        print self.state_idx
         return self.im,
 
     def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=None):
@@ -173,8 +177,12 @@ def test_trinary():
         #machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
         #machine.del_animation() 
         print "rule {0}".format(i)
-    ani = anim.FuncAnimation(figure, update_figures, interval=50, blit=True, frames=51, repeat=True, repeat_delay=1000)
+    ani = anim.FuncAnimation(figure, update_figures, init_func=init_figures, interval=50, blit=True, frames=51, repeat=True, repeat_delay=1000)
     plt.show()
+
+def init_figures(*args):
+    global machines
+    map(lambda x: x.init_anim(), machines)
 
 def update_figures(*args):
     global machines
