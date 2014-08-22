@@ -4,6 +4,7 @@ import matplotlib.animation as anim
 import matplotlib.colors as clr
 
 import time
+import sys
 
 class State:
     def __init__(self, rule=0, values=[0]):
@@ -124,6 +125,7 @@ class Machine:
         else:
             self.im.set_array(self.array)
         self.state_idx = (self.state_idx + 1) % self.layers
+        print self.array
         return self.im,
 
     def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=None):
@@ -157,7 +159,7 @@ def test_binary():
 
 def test_trinary():
     figure = plt.figure()
-    nfigs = 2 
+    nfigs = 1 
     nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
     global machines
     machines = []
@@ -165,18 +167,19 @@ def test_trinary():
         subplot = (nrows, ncols, i+1)
         figure.add_subplot(*subplot)
         print subplot
-        machine = Machine(rule=i, values=[1], type='totalistic')
-        machine = machine.add_layer(50)
+        machine = Machine(rule=i+2, values=[1], type='totalistic')
+        machine = machine.add_layer(3)
         machines.append(machine)
         #machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
         #machine.del_animation() 
         print "rule {0}".format(i)
-    ani = anim.FuncAnimation(figure, update_figures, interval=50, blit=True, frames=50, repeat=False, repeat_delay=1000)
+    ani = anim.FuncAnimation(figure, update_figures, interval=50, blit=True, frames=51, repeat=True, repeat_delay=1000)
     plt.show()
 
 def update_figures(*args):
     global machines
-    return map(lambda x: x.update_fig, machines)
+    images = map(lambda x: x.update_fig()[0], machines)
+    return images
 
 if __name__ == "__main__":
     test_trinary()
