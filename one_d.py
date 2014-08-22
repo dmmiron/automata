@@ -87,6 +87,7 @@ class Machine:
         self.im = None
         self.state_idx = 0
         self.anim_dim = 2
+        self.subplot = None
     def _add_layer(self):
         self.states.append(self.states[-1].next_state())
     def add_layer(self, n=1):
@@ -101,12 +102,15 @@ class Machine:
         self.array = np.zeros(np.array(image).shape)
         if self.anim_dim == 1:
             return plt.imshow(image[0:1], norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
+        elif self.subplot != None:
+            return self.subplot.imshow(image, norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
         else:
             return plt.imshow(image, norm=self.norm, cmap=plt.cm.gray_r, interpolation='none')
     def display(self):
         self._gen_image()
         plt.show()
     def init_anim(self):
+        self.im = self._gen_image()
         self.array = np.zeros(self.array.shape)
         if self.anim_dim == 1:
             self.im.set_array(self.array[0:1, :])
@@ -115,21 +119,15 @@ class Machine:
         return self.im,
 
     def update_fig(self, subplot=None, *args):
-        self.im = self._gen_image()
         if self.state_idx == 0:
-            print "zeroing"
             self.array = np.zeros(self.array.shape)
         pad = self.layers - self.state_idx
-        print self.array, "before"
         self.array[self.state_idx, :] = self.states[self.state_idx].get_values(pad)
-        print self.array, "after"
         if self.anim_dim == 1:
             self.im.set_array(self.array[self.state_idx:self.state_idx+1, :])
         else:
             self.im.set_array(self.array)
         self.state_idx = (self.state_idx + 1) % self.layers
-        print self.array
-        print self.state_idx
         return self.im,
 
     def animate(self, dim=2, interval=50, display=True, repeat=True, repeat_delay=1000, figure=None, subplot=None):
@@ -139,8 +137,9 @@ class Machine:
             self.fig = plt.figure()
         else:
             self.fig = figure
+        #self.im = self._gen_image()
         if subplot != None:
-            self.fig.add_subplot(*subplot)
+            self.subplot = self.fig.add_subplot(*subplot)
         self.ani = anim.FuncAnimation(self.fig, self.update_fig, init_func=self.init_anim, interval=interval, blit=True, frames=self.layers, repeat=repeat, repeat_delay=repeat_delay)
         if display:
             plt.show()
@@ -162,31 +161,44 @@ def test_binary():
     return machine
 
 def test_trinary():
+    global figure
     figure = plt.figure()
-    nfigs = 1 
+    nfigs = 5 
     nrows = int(np.sqrt(nfigs)); ncols = (nfigs + nrows - 1)/nrows 
     global machines
     machines = []
     for i in range(nfigs):
         subplot = (nrows, ncols, i+1)
-        figure.add_subplot(*subplot)
+        #figure.add_subplot(*subplot)
         print subplot
-        machine = Machine(rule=i+2, values=[1], type='totalistic')
-        machine = machine.add_layer(3)
+        machine = Machine(rule=i, values=[1], type='totalistic')
+        machine = machine.add_layer(50)
         machines.append(machine)
-        #machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
+        machine.animate(display=False, repeat=True, figure=figure, subplot=subplot)
         #machine.del_animation() 
         print "rule {0}".format(i)
-    ani = anim.FuncAnimation(figure, update_figures, init_func=init_figures, interval=50, blit=True, frames=51, repeat=True, repeat_delay=1000)
     plt.show()
+    sys.exit()
+    init_figures()
+    ani = anim.FuncAnimation(figure, update_figures, interval=50, blit=True, frames=51, repeat=True, repeat_delay=1000)
+    plt.show()
+
+def gen_images():
+    map(lambda x: x._gen_image(), machines)
 
 def init_figures(*args):
     global machines
-    map(lambda x: x.init_anim(), machines)
+    ims = map(lambda x: x.init_anim(), machines)
+    return 
 
 def update_figures(*args):
     global machines
-    images = map(lambda x: x.update_fig()[0], machines)
+    global figure
+    images = []
+    for idx, machine in enumerate(machines):
+        figure.subplot(2, 2, idx+1) 
+        images.append(machine.update_fig()[0])
+    #images = map(lambda x: x.update_fig()[0], machines)
     return images
 
 if __name__ == "__main__":
